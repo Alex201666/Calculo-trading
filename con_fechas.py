@@ -1,0 +1,125 @@
+import os
+import pandas as pd
+
+# Ruta del archivo de entrada
+input_file_path = "C:\\Users\\alex1\\Desktop\\prueba\\eje2.ods"
+
+# Cargar el archivo Excel
+df = pd.read_excel(input_file_path)
+
+# Función para aplicar el símbolo correspondiente según la dirección
+def add_symbol(direction, result_dollars):
+    if direction == "Buy":
+        return "+" + str(result_dollars)
+    elif direction == "Sell":
+        return "-" + str(result_dollars)
+    else:
+        return str(result_dollars)
+
+# Comprobar si la columna "Resultado en dólares" ya existe
+if "Resultado en dólares" not in df.columns:
+    # Multiplicar las columnas "Order amount" y "Average Price" para obtener el valor en dólares
+    df["Resultado en dólares"] = df["Order amount"] * df["Average Price"]
+
+# Aplicar la función a cada fila de la columna "Direction" si la columna "Resultado con símbolo" no existe
+if "Resultado con símbolo" not in df.columns:
+    df["Resultado con símbolo"] = df.apply(lambda row: add_symbol(row["Direction"], row["Resultado en dólares"]), axis=1)
+
+while True:
+    # Mostrar menú de opciones
+    print("Menú:")
+    print("1. Calculo total de ganancias/pérdidas")
+    print("2. Número de operaciones totales realizadas")
+    print("3. Calcular ganancias/pérdidas en un rango de fechas")
+    print("4. Calcular ganancias/pérdidas por activo")
+    print("5. Generar archivo con los resultados (FINAL.xlsx)")
+    print("6. Salir")
+
+    # Solicitar la opción al usuario
+    opcion = input("Seleccione una opción (1, 2, 3, 4, 5, 6): ")
+
+    # Opción 1: Calculo total de ganancias/pérdidas
+    if opcion == "1":
+        # Separar resultados positivos y negativos en diferentes columnas
+        df["Positivos"] = df["Resultado con símbolo"].apply(lambda x: float(x[1:]) if x.startswith('+') else 0)
+        df["Negativos"] = df["Resultado con símbolo"].apply(lambda x: float(x[1:]) if x.startswith('-') else 0)
+
+        # Calcular la suma de los resultados positivos y negativos
+        suma_positivos = df["Positivos"].sum()
+        suma_negativos = df["Negativos"].sum()
+
+        # Calcular el saldo total
+        saldo_total = suma_positivos - suma_negativos
+
+        # Agregar el símbolo "+" o "-" al saldo total
+        saldo_total_con_simbolo = "+" + str(saldo_total) if saldo_total >= 0 else str(saldo_total)
+
+        # Mostrar el saldo total
+        print("Saldo total:", saldo_total_con_simbolo)
+
+    # Opción 2: Número de operaciones totales realizadas
+    elif opcion == "2":
+        # Obtener el número de filas del DataFrame menos la primera (encabezados de columna)
+        num_operaciones = len(df) - 1
+        print("Número de operaciones totales realizadas:", num_operaciones)
+
+    # Opción 3: Calcular ganancias/pérdidas en un rango de fechas
+    elif opcion == "3":
+        fecha_inicio = input("Ingrese la fecha de inicio (YYYY-MM-DD): ")
+        fecha_fin = input("Ingrese la fecha de fin (YYYY-MM-DD): ")
+
+        # Filtrar el DataFrame por el rango de fechas
+        df_filtrado = df[(df['Date'] >= fecha_inicio) & (df['Date'] <= fecha_fin)]
+
+        # Calcular saldo total en el rango de fechas
+        suma_positivos = df_filtrado["Positivos"].sum()
+        suma_negativos = df_filtrado["Negativos"].sum()
+        saldo_total = suma_positivos - suma_negativos
+
+        # Calcular número de operaciones en el rango de fechas
+        num_operaciones = len(df_filtrado) - 1
+
+        # Mostrar resultados
+        print("Saldo total en el rango de fechas:", saldo_total)
+        print("Número de operaciones en el rango de fechas:", num_operaciones)
+
+    # Opción 4: Calcular ganancias/pérdidas por activo
+    elif opcion == "4":
+        activo = input("Ingrese el activo (Trading pair): ")
+
+        # Separar resultados positivos y negativos en diferentes columnas
+        df["Positivos"] = df["Resultado con símbolo"].apply(lambda x: float(x[1:]) if x.startswith('+') else 0)
+        df["Negativos"] = df["Resultado con símbolo"].apply(lambda x: float(x[1:]) if x.startswith('-') else 0)
+
+        # Filtrar el DataFrame por el activo especificado
+        df_filtrado = df[df['Trading pair'] == activo]
+
+        # Calcular saldo total para el activo
+        suma_positivos = df_filtrado["Positivos"].sum()
+        suma_negativos = df_filtrado["Negativos"].sum()
+        saldo_total = suma_positivos - suma_negativos
+
+        # Calcular número de operaciones para el activo
+        num_operaciones = len(df_filtrado) - 1
+
+        # Mostrar resultados
+        print("Saldo total para el activo:", saldo_total)
+        print("Número de operaciones para el activo:", num_operaciones)
+
+
+    # Opción 5: Generar archivo con los resultados
+    elif opcion == "5":
+        # Ruta del archivo de salida
+        output_file_path = os.path.join(os.path.dirname(input_file_path), "FINAL.xlsx")
+        # Guardar el DataFrame con los resultados en un nuevo archivo Excel
+        df.to_excel(output_file_path, index=False)
+        print(f"Archivo '{output_file_path}' generado con éxito.")
+
+    # Opción 6: Salir del programa
+    elif opcion == "6":
+        print("Saliendo del programa...")
+        break
+
+    # Opción inválida
+    else:
+        print("Opción no válida. Por favor, seleccione una opción válida (1, 2, 3, 4, 5, 6).")
